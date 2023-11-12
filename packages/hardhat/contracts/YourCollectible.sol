@@ -3,12 +3,31 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./Groth16Verifier.sol";
+import "hardhat/console.sol";
 
 /**
  * A smart contract that uses a Groth16 verifier to mint ERC721 tokens.
  * @author BuidlGuidl
  */
 contract YourCollectible is ERC721, Groth16Verifier {
+	uint256[10] DEVCONNECT_EVENT_IDS = [
+		159998235512551662513795025856152008380,
+		12746885520180312913963899346253838012,
+		327191738497033322235372973028470388666,
+		215044871853663930618877187302106366364,
+		64184720578049698369149532776111445453,
+		232265566639431563197006857049078036156,
+		163950200751872883273921880665741105506,
+		299420096544626786108848901027260962253,
+		26642335343961279011750113402825948254,
+		234254580133246406732636908896641409375
+	];
+
+	uint256[2] ZUPASS_SIGNER = [
+		2658696990997679927259430495938453033612384821046330804164935913637421782846,
+		18852953264765021758165045442761617487242246681540213362114332008455443692095
+	];
+
 	uint256 private _nextTokenId;
 	struct ProofArgs {
 		uint256[2] _pA;
@@ -17,9 +36,21 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		uint256[38] _pubSignals;
 	}
 
+	mapping(address => bool) public minted;
+
 	constructor() ERC721("YourCollectible", "YCB") {}
 
-	function mintItem(address to, ProofArgs calldata proof) public {
+	modifier validEventIds(uint256[38] memory _pubSignals) {
+		uint256[10] memory eventIds = getValidEventIdFromPublicSignals(
+			_pubSignals
+		);
+		for (uint256 i = 0; i < 10; i++) {
+			require(eventIds[i] == DEVCONNECT_EVENT_IDS[i], "Invalid event id");
+		}
+		_;
+	}
+
+	modifier verifiedProof(ProofArgs calldata proof) {
 		require(
 			this.verifyProof(
 				proof._pA,
@@ -29,8 +60,44 @@ contract YourCollectible is ERC721, Groth16Verifier {
 			),
 			"Invalid proof"
 		);
+		_;
+	}
+
+	modifier notMinted() {
+		require(!minted[msg.sender], "Already minted");
+		_;
+	}
+
+	modifier validWaterMark(uint256[38] memory _pubSignals) {
+		require(
+			getWaterMarkFromPublicSignals(_pubSignals) ==
+				uint256(uint160(msg.sender)),
+			"Invalid watermark"
+		);
+		_;
+	}
+
+	modifier validSigner(uint256[38] memory _pubSignals) {
+		uint256[2] memory signer = getSignerFromPublicSignals(_pubSignals);
+		require(
+			signer[0] == ZUPASS_SIGNER[0] && signer[1] == ZUPASS_SIGNER[1],
+			"Invalid signer"
+		);
+		_;
+	}
+
+	function mintItem(
+		ProofArgs calldata proof
+	)
+		public
+		verifiedProof(proof)
+		validEventIds(proof._pubSignals)
+		validSigner(proof._pubSignals)
+		notMinted
+	{
 		uint256 tokenId = _nextTokenId++;
-		_safeMint(to, tokenId);
+		minted[msg.sender] = true;
+		_safeMint(msg.sender, tokenId);
 	}
 
 	function tokenURI(
@@ -38,5 +105,33 @@ contract YourCollectible is ERC721, Groth16Verifier {
 	) public view override returns (string memory) {
 		require(_tokenId < _nextTokenId, "tokenId does not exist");
 		return "https://austingriffith.com/images/paintings/buffalo.jpg";
+	}
+
+	// Utility function for destructuring a proof
+	function getWaterMarkFromPublicSignals(
+		uint256[38] memory _pubSignals
+	) public pure returns (uint256) {
+		return _pubSignals[37];
+	}
+
+	// Numbers of events is arbitary but for this example we are using 10 (including test eventID)
+	function getValidEventIdFromPublicSignals(
+		uint256[38] memory _pubSignals
+	) public pure returns (uint256[10] memory) {
+		// Events are stored from starting index 15 to next 10 indexes
+		uint256[10] memory eventIds;
+		for (uint256 i = 0; i < 10; i++) {
+			eventIds[i] = _pubSignals[15 + i];
+		}
+		return eventIds;
+	}
+
+	function getSignerFromPublicSignals(
+		uint256[38] memory _pubSignals
+	) public pure returns (uint256[2] memory) {
+		uint256[2] memory signer;
+		signer[0] = _pubSignals[13];
+		signer[1] = _pubSignals[14];
+		return signer;
 	}
 }
