@@ -20,7 +20,6 @@ const fieldsToReveal = {
 
 const Home: NextPage = () => {
   const [verifiedFrontend, setVerifiedFrontend] = useState(false);
-  const [verifiedOnChain, setVerifiedOnChain] = useState(false);
   const { authenticate, pcd } = useZuAuth();
   const { address: connectedAddress } = useAccount();
 
@@ -73,7 +72,7 @@ const Home: NextPage = () => {
   };
 
   // mintItem verifies the proof on-chain and mints an NFT
-  const { writeAsync: mintNFT } = useScaffoldContractWrite({
+  const { writeAsync: mintNFT, isLoading: isMintingNFT } = useScaffoldContractWrite({
     contractName: "YourCollectible",
     functionName: "mintItem",
     // @ts-ignore TODO: fix the type later with readonly fixed length bigInt arrays
@@ -126,8 +125,8 @@ const Home: NextPage = () => {
               </div>
               <div className="tooltip" data-tip="Submit the proof to a smart contract to verify it on-chain.">
                 <button
-                  className="btn btn-primary w-full"
-                  disabled={verifiedOnChain}
+                  className={`btn btn-primary w-full ${isMintingNFT ? "loading" : null}`}
+                  disabled={!pcd || isMintingNFT}
                   onClick={async () => {
                     try {
                       await mintNFT();
@@ -145,7 +144,6 @@ const Home: NextPage = () => {
                   className="btn btn-ghost text-error underline normal-case"
                   onClick={() => {
                     setVerifiedFrontend(false);
-                    setVerifiedOnChain(false);
                   }}
                 >
                   Reset
