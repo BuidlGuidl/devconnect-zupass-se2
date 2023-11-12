@@ -10,6 +10,11 @@ import "hardhat/console.sol";
  * @author BuidlGuidl
  */
 contract YourCollectible is ERC721, Groth16Verifier {
+	// ----------------------
+	// Predefined constatns |
+	// ----------------------
+
+	// This are events UUIDs converted to bigint
 	uint256[10] DEVCONNECT_EVENT_IDS = [
 		159998235512551662513795025856152008380,
 		12746885520180312913963899346253838012,
@@ -23,12 +28,19 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		234254580133246406732636908896641409375
 	];
 
+	// This is hex to bigint conversion of Zupass signer
 	uint256[2] ZUPASS_SIGNER = [
 		2658696990997679927259430495938453033612384821046330804164935913637421782846,
 		18852953264765021758165045442761617487242246681540213362114332008455443692095
 	];
 
+	// ----------------------
+	// State variables      |
+	// ----------------------
+
 	uint256 private _nextTokenId;
+	mapping(address => bool) public minted;
+
 	struct ProofArgs {
 		uint256[2] _pA;
 		uint256[2][2] _pB;
@@ -36,19 +48,9 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		uint256[38] _pubSignals;
 	}
 
-	mapping(address => bool) public minted;
-
-	constructor() ERC721("YourCollectible", "YCB") {}
-
-	modifier validEventIds(uint256[38] memory _pubSignals) {
-		uint256[10] memory eventIds = getValidEventIdFromPublicSignals(
-			_pubSignals
-		);
-		for (uint256 i = 0; i < 10; i++) {
-			require(eventIds[i] == DEVCONNECT_EVENT_IDS[i], "Invalid event id");
-		}
-		_;
-	}
+	// ----------------------
+	// Modifiers            |
+	// ----------------------
 
 	modifier verifiedProof(ProofArgs calldata proof) {
 		require(
@@ -63,8 +65,22 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		_;
 	}
 
-	modifier notMinted() {
-		require(!minted[msg.sender], "Already minted");
+	modifier validEventIds(uint256[38] memory _pubSignals) {
+		uint256[10] memory eventIds = getValidEventIdFromPublicSignals(
+			_pubSignals
+		);
+		for (uint256 i = 0; i < 10; i++) {
+			require(eventIds[i] == DEVCONNECT_EVENT_IDS[i], "Invalid event id");
+		}
+		_;
+	}
+
+	modifier validSigner(uint256[38] memory _pubSignals) {
+		uint256[2] memory signer = getSignerFromPublicSignals(_pubSignals);
+		require(
+			signer[0] == ZUPASS_SIGNER[0] && signer[1] == ZUPASS_SIGNER[1],
+			"Invalid signer"
+		);
 		_;
 	}
 
@@ -77,14 +93,12 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		_;
 	}
 
-	modifier validSigner(uint256[38] memory _pubSignals) {
-		uint256[2] memory signer = getSignerFromPublicSignals(_pubSignals);
-		require(
-			signer[0] == ZUPASS_SIGNER[0] && signer[1] == ZUPASS_SIGNER[1],
-			"Invalid signer"
-		);
+	modifier notMinted() {
+		require(!minted[msg.sender], "Already minted");
 		_;
 	}
+
+	constructor() ERC721("YourCollectible", "YCB") {}
 
 	function mintItem(
 		ProofArgs calldata proof
@@ -107,7 +121,10 @@ contract YourCollectible is ERC721, Groth16Verifier {
 		return "https://austingriffith.com/images/paintings/buffalo.jpg";
 	}
 
-	// Utility function for destructuring a proof
+	// ----------------------------------------------------------
+	// Utility functions for destructuring a proof publicSignals|
+	// ----------------------------------------------------------
+
 	function getWaterMarkFromPublicSignals(
 		uint256[38] memory _pubSignals
 	) public pure returns (uint256) {
