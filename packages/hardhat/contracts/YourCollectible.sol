@@ -13,9 +13,8 @@ contract YourCollectible is ERC721, Groth16Verifier {
 	// Predefined constatns |
 	// ----------------------
 
-	uint256 constant VALID_EVENT_IDS_LENGTH = 10;
 	// This are DevConnect events UUIDs converted to bigint
-	uint256[VALID_EVENT_IDS_LENGTH] VALID_EVENT_IDS = [
+	uint256[10] VALID_EVENT_IDS = [
 		159998235512551662513795025856152008380, // AW Assembly
 		12746885520180312913963899346253838012, // Programmable Cryptography
 		327191738497033322235372973028470388666, // 0xPARC Event
@@ -66,7 +65,7 @@ contract YourCollectible is ERC721, Groth16Verifier {
 	}
 
 	modifier validEventIds(uint256[38] memory _pubSignals) {
-		uint256[10] memory eventIds = getValidEventIdFromPublicSignals(
+		uint256[] memory eventIds = getValidEventIdFromPublicSignals(
 			_pubSignals
 		);
 		require(
@@ -136,10 +135,10 @@ contract YourCollectible is ERC721, Groth16Verifier {
 	// Numbers of events is arbitary but for this example we are using 10 (including test eventID)
 	function getValidEventIdFromPublicSignals(
 		uint256[38] memory _pubSignals
-	) public pure returns (uint256[VALID_EVENT_IDS_LENGTH] memory) {
+	) public view returns (uint256[] memory) {
 		// Events are stored from starting index 15 to till valid event ids length
-		uint256[VALID_EVENT_IDS_LENGTH] memory eventIds;
-		for (uint256 i = 0; i < VALID_EVENT_IDS_LENGTH; i++) {
+		uint256[] memory eventIds = new uint256[](VALID_EVENT_IDS.length);
+		for (uint256 i = 0; i < VALID_EVENT_IDS.length; i++) {
 			eventIds[i] = _pubSignals[15 + i];
 		}
 		return eventIds;
