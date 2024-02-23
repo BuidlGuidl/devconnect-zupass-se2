@@ -3,7 +3,7 @@ import { ZKEdDSAEventTicketPCDPackage } from "@pcd/zk-eddsa-event-ticket-pcd";
 import type { NextPage } from "next";
 import { hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
-import { isZupassPublicKey, useZuAuth } from "zupass-auth";
+import { isZupassPublicKey, useZuAuth } from "zuauth";
 import { MetaHeader } from "~~/components/MetaHeader";
 import { useScaffoldContractRead, useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 import { notification } from "~~/utils/scaffold-eth";
@@ -30,7 +30,7 @@ const Home: NextPage = () => {
       notification.error("Please connect wallet");
       return;
     }
-    authenticate(fieldsToReveal, connectedAddress, validEventIds);
+    authenticate(fieldsToReveal, connectedAddress, "", validEventIds, []);
   }, [authenticate, connectedAddress]);
 
   const verifyProofFrontend = async () => {

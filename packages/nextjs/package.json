@@ -38,7 +38,7 @@
     "usehooks-ts": "^2.7.2",
     "viem": "^1.16.6",
     "wagmi": "1.4.4",
-    "zupass-auth": "^0.0.4",
+    "zuauth": "^0.4.0",
     "zustand": "^4.1.2"
   },
   "devDependencies": {

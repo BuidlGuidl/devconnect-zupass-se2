@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { hexToBigInt } from "viem";
 import { createWalletClient, http, isAddress, parseEther } from "viem";
 import { hardhat } from "viem/chains";
-import { isZupassPublicKey } from "zupass-auth";
+import { isZupassPublicKey } from "zuauth";
 
 const localWalletClient = createWalletClient({
   chain: hardhat,
